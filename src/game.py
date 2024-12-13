@@ -1,6 +1,8 @@
 import pygame
 import os
 import random
+from ia import minimax,get_valid_moves,evaluate_board
+
 
 class Game:
     def __init__(self, screen):
@@ -12,6 +14,7 @@ class Game:
         self.board_status = self.create_board_status()  # Tablero de estado inicial
         self.pieces = []
         self.initialize_pieces()
+        self.can_move = False
 
         # Cargar imágenes de las fichas grises
         assets_path = os.path.join(os.path.dirname(__file__), "..", "assets")
@@ -39,6 +42,19 @@ class Game:
 
         # Configurar la fuente para mostrar las coordenadas
         self.font = pygame.font.SysFont('Arial', 10)
+
+        # Agregar una lista de posiciones válidas iniciales
+        self.valid_positions = [
+            f"{chr(65 + col)}{row}"
+            for row in range(1, 3)  # Filas 1 y 2
+            for col in range(8)  # Columnas A-H
+        ]
+
+        # Mantener las piezas superiores bloqueadas
+        self.locked_pieces = []
+        for piece in self.pieces:
+            if piece["pos"][1] < self.margin + self.cell_size * 2:  # Piezas en filas superiores
+                self.locked_pieces.append(piece)
 
     def create_board(self):
         # Genera un diccionario con las coordenadas del tablero
@@ -129,64 +145,109 @@ class Game:
     def update(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
+                # Selección de pieza por parte del jugador
                 for piece in reversed(self.pieces):
+                    # Evitar mover piezas bloqueadas o de la IA
+                    if piece in self.locked_pieces:
+                        continue
+
                     piece_rect = pygame.Rect(piece["pos"], (self.cell_size, self.cell_size))
                     if piece_rect.collidepoint(event.pos):
                         self.selected_piece = piece
                         self.mouse_offset = (event.pos[0] - piece["pos"][0], event.pos[1] - piece["pos"][1])
-                        self.original_position = piece["pos"]  # Guardar la posición original
+                        self.original_position = piece["pos"]
                         break
 
         elif event.type == pygame.MOUSEBUTTONUP:
             if event.button == 1:
                 if self.selected_piece:
-                    # Calcular la celda a la que se intentará mover la pieza
+                    # Calcular la celda destino
                     mouse_x, mouse_y = event.pos
                     col = (mouse_x - self.margin) // self.cell_size
                     row = (mouse_y - self.margin) // self.cell_size
 
-                    # Verificar si las coordenadas están dentro del tablero
-                    if 0 <= col < self.board_size and 0 <= row < self.board_size:
+                    if 0 <= col < self.board_size and 0 <= row < self.board_size:  # Dentro del tablero
                         x = self.margin + col * self.cell_size
                         y = self.margin + row * self.cell_size
-
-                        # Obtener coordenada tipo A1 a partir de (col, row)
-                        letters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
-                        coordinate = f"{letters[col]}{self.board_size - row}"  # 
+                        coordinate = f"{chr(65 + col)}{self.board_size - row}"
 
                         # Verificar si la celda está ocupada
                         cell_occupied = any(p["pos"] == (x, y) for p in self.pieces)
 
                         if not cell_occupied:
+                            # Restricción de posiciones iniciales
+                            if self.can_move == False and self.selected_piece not in self.locked_pieces and coordinate not in self.valid_positions:
+                                print(f"No se puede colocar la pieza en {coordinate}. Solo se permiten posiciones iniciales válidas.")
+                                self.selected_piece["pos"] = self.original_position
+                            else:
+                                old_coordinate = f"{chr(65 + self.original_position[0] // self.cell_size)}{self.board_size - (self.original_position[1] // self.cell_size)}"
+                                self.board_status[old_coordinate] = 0
+                                self.selected_piece["pos"] = (x, y)
+                                self.board_status[coordinate] = self.get_piece_initial(self.selected_piece["name"])
 
-                            # Primero, actualizar la celda anterior a 0 (vacía)
-                            old_coordinate = f"{chr(65 + self.original_position[0] // self.cell_size)}{self.board_size - (self.original_position[1] // self.cell_size)}"
-                            self.board_status[old_coordinate] = 0  # Celda vacía
+                                if self.selected_piece in self.locked_pieces:
+                                    self.locked_pieces.remove(self.selected_piece)  # Desbloquear pieza
 
-                            # Mover la pieza a la nueva posición
-                            self.selected_piece["pos"] = (x, y)
-                            self.board_status[coordinate] = self.get_piece_initial(self.selected_piece["name"])  # Usar la nueva función
-                            self.print_board_status()  # Imprimir el estado del tablero
+                                self.print_board_status()
                         else:
-                            # Celda ocupada: devolver a la posición original
-                            self.selected_piece["pos"] = self.original_position
                             print(f"Celda ocupada: {coordinate}. No se puede mover la pieza.")
-                            print(f"Celda ocupada: ({row}, {col}). No se puede mover la pieza.")
-                            self.print_board_status()  # Imprimir el estado del tablero
+                            self.selected_piece["pos"] = self.original_position
                     else:
-                        # Movimiento fuera del tablero: devolver a la posición original
-                        self.selected_piece["pos"] = self.original_position
                         print("Intento de mover fuera del tablero.")
-                        self.print_board_status()  # Imprimir el estado del tablero
+                        self.selected_piece["pos"] = self.original_position
 
-                    # Resetear la pieza seleccionada y posición original
+                    # Resetear selección
                     self.selected_piece = None
                     self.original_position = None
+
+                    # Verificar si todas las piezas grises han sido colocadas
+                    if self.all_grey_pieces_placed():
+                        self.can_move = True
+                        print("¡Todas las piezas grises están en el tablero! Turno de la IA.")
+                        self.execute_ai_turn()  # Llamar al turno de la IA
 
         elif event.type == pygame.MOUSEMOTION:
             if self.selected_piece:
                 # Actualizar la posición de la pieza mientras se arrastra
                 self.selected_piece["pos"] = (event.pos[0] - self.mouse_offset[0], event.pos[1] - self.mouse_offset[1])
+
+    def all_grey_pieces_placed(self):
+        """Verifica si todas las piezas grises han sido colocadas en el tablero."""
+        for piece in self.pieces:
+            if piece["name"].endswith("Gris"):  # Las piezas grises
+                col = (piece["pos"][0] - self.margin) // self.cell_size
+                row = (piece["pos"][1] - self.margin) // self.cell_size
+
+                if not (0 <= col < self.board_size and 0 <= row < self.board_size):
+                    # Si alguna pieza gris sigue fuera del tablero
+                    return False
+        return True
+    
+    def execute_ai_turn(self):
+        """Calcula y ejecuta el movimiento de la IA utilizando Minimax."""
+        _, best_move = minimax(self.board_status, depth=3, maximizing_player=False)
+        if best_move:
+            old_pos, new_pos = best_move
+            piece = self.board_status[old_pos]
+            self.board_status[new_pos] = piece
+            self.board_status[old_pos] = 0
+
+            # Actualizar posición de la pieza en la lista `self.pieces`
+            for p in self.pieces:
+                if p["pos"] == self.get_screen_position_from_coordinate(old_pos):
+                    p["pos"] = self.get_screen_position_from_coordinate(new_pos)
+                    break
+
+            print(f"IA movió {piece} de {old_pos} a {new_pos}.")
+            self.print_board_status()
+
+    def get_screen_position_from_coordinate(self, coordinate):
+        """Convierte una coordenada del tablero (A1, B2, etc.) a una posición de pantalla."""
+        col = ord(coordinate[0]) - 65  # 'A' = 0, 'B' = 1, etc.
+        row = self.board_size - int(coordinate[1])  # Fila del tablero
+        x = self.margin + col * self.cell_size
+        y = self.margin + row * self.cell_size
+        return (x, y)
 
     def draw(self):
         """Dibujar el tablero y las piezas"""
