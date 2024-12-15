@@ -402,10 +402,10 @@ def coordenadas_congeladas(tablero):
 
 a = {'A8': 'r', 'B8': 'g', 'C8': 'g', 'D8': 'r', 'E8': 'd', 'F8': 'h', 'G8': 'd', 'H8': 'r',    
     'A7': 0, 'B7': 0, 'C7': 0, 'D7': 0, 'E7': 0, 'F7': 0, 'G7': 0, 'H7': 0,
-    'A6': 0, 'B6': 0, 'C6': 0, 'D6':0, 'E6': 0, 'F6': 0, 'G6': 0, 'H6': 0, 
+    'A6': 0, 'B6': 0, 'C6': 'C', 'D6':0, 'E6': 0, 'F6': 0, 'G6': 0, 'H6': 0, 
     'A5': 0, 'B5': 0, 'C5': 0, 'D5': 0, 'E5': 0, 'F5': 0, 'G5': 0, 'H5': 0, 
     'A4': 0, 'B4': 0, 'C4': 0, 'D4': 0, 'E4': 0, 'F4': 0, 'G4': 0, 'H4': 0,
-    'A3': 0, 'B3': 0, 'C3': 0, 'D3': 0, 'E3': 0, 'F3': 0, 'G3': 0, 'H3': 0, 
+    'A3': 0, 'B3': 0, 'C3': 0, 'D3': 0, 'E3': 'r', 'F3': 'H', 'G3': 0, 'H3': 0, 
     'A2': 0, 'B2': 0, 'C2': 0, 'D2': 0, 'E2': 0, 'F2': 0, 'G2': 0, 'H2': 0, 
     'A1': 'E', 'B1': 'R', 'C1': 'R', 'D1': 0, 'E1': 0, 'F1': 0, 'G1': 0, 'H1': 0, 
     'A0': 0, 'A-1': 0, 'B0': 0, 'B-1': 0, 'C0': 0, 'C-1': 0, 'D0': 0, 'D-1': 0, 'E0': 0, 'F0': 0, 'E-1': 0, 'G0': 0, 'F-1': 0, 'H0': 0, 'G-1': 0, 'H-1': 0}
@@ -431,6 +431,97 @@ def imprimir_arbol(nodo, nivel=0):
 # Ejemplo de uso:
 # Suponiendo que tienes un nodo raíz 'raiz' y has añadido algunos hijos en su lista 'hijos'
 
+
+#----------------------------------------------------------------------- HEURISTICAS -------------------------------------------------------------------------------------------
+
+#--CONTAR LA CANTIDAD DE CONEJOS si es R o r
+def contar_conejos(tablero):
+    # Contar la cantidad de conejos (R o r) en el tablero
+    cantidad_conejos = sum(1 for v in tablero.values() if v in ['r'])   #in ['R'] o para el otro caso #in ['r']
+    print(f'Cantidad de conejos jugador ia r: {cantidad_conejos}')
+    return cantidad_conejos
+
+#PRUEBA ------->   contar_conejos(a)
+
+#--ENCUENTRA EL CONEJO MAS CERCANO A LA META
+def conejo_mas_cercano_meta(tablero):
+    # Inicializar variables para almacenar la posición del conejo más cercano y la menor distancia encontrada
+    posicion_mas_cercana = None
+    menor_distancia = float('inf')
+    
+    # Recorrer el tablero para encontrar conejos 'r'
+    for posicion, valor in tablero.items():
+        if valor == 'r':
+            # Extraer la letra y el número de la posición
+            letra, numero = extraer_letra_o_numero(posicion)
+            # Calcular la distancia a la meta (fila 1)
+            distancia = numero - 1
+            # Si la distancia es menor que la menor distancia encontrada, actualizar las variables
+            if distancia < menor_distancia:
+                menor_distancia = distancia
+                posicion_mas_cercana = posicion
+    
+    return posicion_mas_cercana
+
+#PRUEBA ------> print('El conejo de la ia mas cercano a la meta es:',conejo_mas_cercano_meta(a))
+
+#--CANTIDAD DE FICHAS DE CADA TIPO
+def cantidad_fichas_por_tipo(tablero):
+    # Inicializar diccionarios para contar las fichas de cada tipo
+    fichas_mayusculas = {}
+    fichas_minusculas = {}
+    
+    # Recorrer el tablero y contar las fichas según su tipo
+    for valor in tablero.values():
+        if isinstance(valor, str):
+            if valor.isupper():
+                if valor in fichas_mayusculas:
+                    fichas_mayusculas[valor] += 1
+                else:
+                    fichas_mayusculas[valor] = 1
+            elif valor.islower():
+                if valor in fichas_minusculas:
+                    fichas_minusculas[valor] += 1
+                else:
+                    fichas_minusculas[valor] = 1
+    
+    # Imprimir los resultados
+    print('Cantidad de fichas mayúsculas:')
+    for ficha, cantidad in fichas_mayusculas.items():
+        print(f'{ficha}: {cantidad}')
+    
+    print('Cantidad de fichas minúsculas:')
+    for ficha, cantidad in fichas_minusculas.items():
+        print(f'{ficha}: {cantidad}')
+    
+    return fichas_mayusculas, fichas_minusculas
+
+#PRUEBA ------> cantidad_fichas_por_tipo(a)
+
+#--FICHAS EN LOS CUADROS AZULES
+def fichas_en_cuadros_azules(tablero):
+    # Definir las posiciones de los cuadros azules
+    cuadros_azules = ['C6', 'F6', 'C3', 'F3']
+    
+    # Crear un diccionario para almacenar las fichas en los cuadros azules
+    fichas_azules = {}
+    
+    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
+    for posicion in cuadros_azules:
+        fichas_azules[posicion] = tablero.get(posicion, 0)
+
+    #Si solo se quiere guardar las fichas que estan sin su posicion:
+    '''
+    fichas_azules = []
+    
+    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
+    for posicion in cuadros_azules:
+        fichas_azules.append(tablero.get(posicion, 0))
+    '''
+    
+    return fichas_azules
+
+#PRUEBA -----> print('Fichas en los cuadros azules:', fichas_en_cuadros_azules(a))
 
 respuesta = algoritmoMiniMax(a).hijos
 # imprimir_arbol(respuesta)
