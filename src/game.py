@@ -1,7 +1,9 @@
 import pygame
 import os
 import random
-from ia import minimax,get_valid_moves,evaluate_board
+import tkinter as tk
+from tkinter import simpledialog
+from logica import iniciar, validar_adyacentes_mismo_tipo
 
 
 class Game:
@@ -15,6 +17,7 @@ class Game:
         self.pieces = []
         self.initialize_pieces()
         self.can_move = False
+        self.inicial= True
 
         # Cargar imágenes de las fichas grises
         assets_path = os.path.join(os.path.dirname(__file__), "..", "assets")
@@ -55,6 +58,10 @@ class Game:
         for piece in self.pieces:
             if piece["pos"][1] < self.margin + self.cell_size * 2:  # Piezas en filas superiores
                 self.locked_pieces.append(piece)
+
+        # Inicializar contador de movimientos
+        self.movimientos_realizados = 0
+        self.movimientos_permitidos = 1  # Valor por defecto
 
     def create_board(self):
         # Genera un diccionario con las coordenadas del tablero
@@ -106,6 +113,25 @@ class Game:
             pos = (self.margin + i * self.cell_size, y_pos_gris)
             self.pieces.append({"name": name, "pos": pos})
 
+    def preguntar_movimientos(self):
+        """Pregunta al usuario cuántos movimientos desea hacer usando una ventana emergente."""
+        root = tk.Tk()
+        root.withdraw()  # Ocultar la ventana principal de Tkinter
+
+        while True:
+            try:
+                movimientos = simpledialog.askinteger("Movimientos", "¿Cuántos movimientos deseas hacer (1-4)?")
+                if movimientos is None:
+                    print("Operación cancelada por el usuario.")
+                    return
+                if 1 <= movimientos <= 4:
+                    self.movimientos_permitidos = movimientos
+                    break
+                else:
+                    print("Por favor, ingresa un número entre 1 y 4.")
+            except ValueError:
+                print("Por favor, ingresa un número válido.")
+
     def get_piece_initial(self, name):
         """Devuelve la inicial correspondiente para las fichas doradas y grises"""
         piece_initials_gold = {
@@ -147,9 +173,6 @@ class Game:
             if event.button == 1:
                 # Selección de pieza por parte del jugador
                 for piece in reversed(self.pieces):
-                    # Evitar mover piezas bloqueadas o de la IA
-                    if piece in self.locked_pieces:
-                        continue
 
                     piece_rect = pygame.Rect(piece["pos"], (self.cell_size, self.cell_size))
                     if piece_rect.collidepoint(event.pos):
@@ -189,6 +212,8 @@ class Game:
                                     self.locked_pieces.remove(self.selected_piece)  # Desbloquear pieza
 
                                 self.print_board_status()
+                                self.eliminar_ficha()  # Eliminar fichas adyacentes
+                                # SE INSERTA GANAR
                         else:
                             print(f"Celda ocupada: {coordinate}. No se puede mover la pieza.")
                             self.selected_piece["pos"] = self.original_position
@@ -200,11 +225,24 @@ class Game:
                     self.selected_piece = None
                     self.original_position = None
 
-                    # Verificar si todas las piezas grises han sido colocadas
-                    if self.all_grey_pieces_placed():
-                        self.can_move = True
-                        print("¡Todas las piezas grises están en el tablero! Turno de la IA.")
-                        self.execute_ai_turn()  # Llamar al turno de la IA
+
+                    if self.inicial == True:
+                        # Verificar si todas las piezas grises han sido colocadas
+                        if self.all_grey_pieces_placed():
+                            self.can_move = True
+                            self.inicial = False
+                            print("¡Todas las piezas grises están en el tablero! Turno de la IA.")
+                            self.execute_ai_turn()  # Llamar al turno de la IA
+                    else:
+                         # Incrementar el contador de movimientos
+                        self.movimientos_realizados += 1
+                        print("Cantidad de movimientos realizados: ",self.movimientos_realizados)
+                        # Verificar si se han realizado los movimientos permitidos
+                        if self.movimientos_realizados >= self.movimientos_permitidos:
+                            self.movimientos_realizados = 0  # Reiniciar el contador
+                            self.execute_ai_turn()  # Ejecutar el turno de la IA
+                    
+                        
 
         elif event.type == pygame.MOUSEMOTION:
             if self.selected_piece:
@@ -226,9 +264,14 @@ class Game:
     def execute_ai_turn(self):
         """Calcula y ejecuta el movimiento de la IA utilizando Minimax."""
         print(self.board_status)
-        _, best_move = minimax(self.board_status, depth=3, maximizing_player=False)
+        best_move = iniciar(self.board_status, 1)
+        
+        print("JUAAAN",best_move, type(best_move))
         if best_move:
-            old_pos, new_pos = best_move
+            old_pos = best_move[0]
+            new_pos = best_move[1]
+            print(old_pos)
+            print(new_pos)
             piece = self.board_status[old_pos]
             self.board_status[new_pos] = piece
             self.board_status[old_pos] = 0
@@ -241,6 +284,13 @@ class Game:
 
             print(f"IA movió {piece} de {old_pos} a {new_pos}.")
             self.print_board_status()
+
+            # Redibujar el tablero y las piezas
+            self.screen.fill((255, 255, 255))  # Fondo blanco
+            self.draw()
+            pygame.display.flip()  # Actualizar la pantalla
+            # Preguntar al usuario cuántos movimientos desea hacer
+        self.preguntar_movimientos()
 
     def get_screen_position_from_coordinate(self, coordinate):
         """Convierte una coordenada del tablero (A1, B2, etc.) a una posición de pantalla."""
@@ -293,3 +343,28 @@ class Game:
                 x_offset = (self.cell_size - scaled_image.get_width()) // 2
                 y_offset = (self.cell_size - scaled_image.get_height()) // 2
                 self.screen.blit(scaled_image, (self.selected_piece["pos"][0] + x_offset, self.selected_piece["pos"][1] + y_offset))
+
+
+#La idea es mostrar un TKinter con un mensaje de ganador y la ficha que se elimina
+    def eliminar_ficha(self):
+
+            blue_coordinates = ["C3", "F3", "C6", "F6"]
+
+            for coordinate in blue_coordinates:
+
+                if(coordinate != '0'):
+                    if not validar_adyacentes_mismo_tipo(self.board_status, coordinate):
+                        # Eliminar la ficha del tablero
+                        self.board_status[coordinate] = 0
+
+                        # Actualizar visualmente la ficha en la lista
+                        for piece in self.pieces:
+                            col, row = self.board[coordinate]  # Obtener coordenada de píxel
+                            x = self.margin + col * self.cell_size
+                            y = self.margin + row * self.cell_size
+                            if piece["pos"] == (x, y):
+                                self.pieces.remove(piece)
+                                print(f"Ficha eliminada en {coordinate}")
+                                break
+
+    #-----> AQUI VA GANAR -----------

@@ -1,12 +1,16 @@
 import copy
+import random
 
 class Nodo:
-    def __init__(self, tablero, turnos=4, movimiento=None):
+    def __init__(self, tablero,profundidad, valor, turnos=4, movimiento=None,indiceH = None):
         self.tablero = tablero  # Tablero del nodo
         self.movimiento = movimiento  # Movimiento realizado para llegar a este nodo
         self.hijos = []  # Lista de nodos hijos
         self.turnos = turnos
-
+        self.profundidad = profundidad
+        self.valor = valor 
+        self.indiceH = indiceH
+        self.cambio = []
 
 def coordenadas_letras(tablero, tipo="minusculas"):
     # Buscar coordenadas y valores según el tipo especificado (minúsculas o mayúsculas)
@@ -39,7 +43,6 @@ def extraer_letra_o_numero(cadena):
     numero = ''.join(filter(str.isdigit, cadena))
     return letra, int(numero) if numero else None
 
-
 def validar_adyacentes_mismo_tipo(tablero, coordenada):
     bandera = False
     
@@ -68,15 +71,16 @@ def validar_adyacentes_mismo_tipo(tablero, coordenada):
         if nueva_coordenada in tablero:
             casilla_destino = tablero[nueva_coordenada]
 
+
             # Asegurarse de que la casilla destino es una cadena antes de llamar a isupper o islower
-            if isinstance(casilla_destino, str) and casilla_destino != '0':
-                if (coordenada.islower() and casilla_destino.islower()) or \
-                (coordenada.isupper() and casilla_destino.isupper()):
+            if isinstance(casilla_destino, str) and casilla_destino != '0' and tablero[coordenada] !=0 :
+                
+                
+                if (tablero[coordenada].islower() and casilla_destino.islower()) or (tablero[coordenada].isupper() and casilla_destino.isupper()):
                     # print('BANDERA', coordenada,mov,casilla_destino)
                     bandera = True
 
     return bandera
-
 
 def validaMov(congeladas,coordenada, ficha):
 
@@ -115,8 +119,6 @@ def validaMov(congeladas,coordenada, ficha):
 
 
     return list(movimientosValidos)
-
-
 
 def mover(coordenada, ficha, movimientos_validos, tablero, turno):
 
@@ -178,6 +180,7 @@ def mover(coordenada, ficha, movimientos_validos, tablero, turno):
 
                 # print(tablero)
             elif isinstance(casilla_destino, str):
+                
                 # Verificar si la ficha en la nueva coordenada es del mismo tipo (mayúscula/minúscula)
                 if (ficha.islower() and casilla_destino.isupper()) or (ficha.isupper() and casilla_destino.islower()):
                     
@@ -236,7 +239,6 @@ def mover(coordenada, ficha, movimientos_validos, tablero, turno):
     # Devolver la lista de movimientos realizados
     return movimientos_realizados
 
-
 def actualizar_tablero(tablero, coordenada, valor):
     """
     Actualiza el tablero con un nuevo valor en la coordenada especificada.
@@ -260,7 +262,7 @@ def actualizar_tablero(tablero, coordenada, valor):
         if(coordenada in blue_coordinates):
             junta = validar_adyacentes_mismo_tipo(tablero, coordenada)
             if not (junta):
-                print('Eliminado')
+                print(tablero[coordenada],'Eliminado por estar ', coordenada)
                 tablero[coordenada] = '0'
 
     else:
@@ -270,15 +272,22 @@ def actualizar_tablero(tablero, coordenada, valor):
     
     return tablero
 
-
-def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
+def hijos(board_status,raizOriginal,contadorTurno=4, depth=0, jugador='-inf'):
 
     #Creo el nodo del arbol, que es el tablero que ingresa.
     tableroOriginal = copy.deepcopy(board_status)
-    raiz = Nodo(copy.deepcopy(board_status))
+    # raiz = Nodo(copy.deepcopy(board_status),depth,float(jugador))
+    raiz = copy.deepcopy(board_status)
+
+    listaHijos = []
 
     #obtener fichas de min(enemigo)
-    fichasMin = coordenadas_letras(copy.deepcopy(board_status), "mayusculas")
+    if(jugador=='inf'):
+        de = 'mayusculas'
+    else:
+        de = 'minusculas'
+
+    fichasMin = coordenadas_letras(copy.deepcopy(board_status), de)
 
     congeladas = coordenadas_congeladas(copy.deepcopy(board_status))
 
@@ -290,53 +299,162 @@ def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
         print(c,f,valido)
 
         mov = mover(c,f,valido,tableroOriginal,contadorTurno)
-        print("CAMBIOS:", mov)
-        print('------------')
+        # print("CAMBIOS:", mov)
+        
 
-        tableroNuevo = copy.deepcopy(board_status)
+        
 
         if(mov != []):
             # print("Mov no VACIO")
             cont = 0
             for i in mov:
-                # print("Cambios",i)
+                tableroNuevo = copy.deepcopy(board_status)
+                print("Cambios----------",i)
                 cont2 = 0
+
+                queCambio =[]
                 for j in i:
-                    #print("UN cambio", j)
+                    #\print("UN cambio", j)
                     if j != i[-1]:
                 
                         coordenada = mov[cont][cont2][0]
-                        # print('coordenda',coordenada)
+                        #print('coordenda',coordenada)
                         valor = mov[cont][cont2][1]
-                        # print('VALOR',valor)
+                        #print('VALOR',valor)
                         ultM = mov[cont][cont2][2]
-                        # print('ULTM', ultM)
+                        #print('ULTM', ultM)
                         turnosRes = mov[cont][-1]
                         #print('Tur', turnosRes)
                         tableroNuevo = actualizar_tablero(tableroNuevo,coordenada,valor)
+                        queCambio.append(coordenada)
                         
 
                     cont2 = cont2 + 1
                 
                 
-                if(tableroNuevo != raiz.tablero):
-                        hijoN = Nodo(tableroNuevo,turnosRes,ultM)
-                        raiz.hijos.append(hijoN)
-                        
+                if(tableroNuevo != raiz and tableroNuevo != raizOriginal):
                     
+                        if(jugador == '-inf'):
+                            hijoN = Nodo(tableroNuevo,depth+1, float('inf'),turnosRes,ultM)
+                            hijoN.cambio = queCambio
+                        else:
+                            hijoN = Nodo(tableroNuevo,depth+1, float('-inf'),turnosRes,ultM)
+                            hijoN.cambio = queCambio
+
+                        # raiz.hijos.append(hijoN) 
+                        listaHijos.append(hijoN) 
+                        # print(hijoN.tablero)
+                else:
+                    print("SE ELIMINA POR QUE YA EXISTE ESE ESTADO",)
                         
                             
 
                 cont = cont + 1
 
-    imprimir_arbol(raiz)
 
-    return raiz
-
+        print('------------')
 
 
+    # imprimir_arbol(raiz)
 
-    #Validar movimientos
+    return listaHijos
+
+def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
+    if profA > profT:
+        m = random.randint(1,5)                                #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
+        return  0, m  # No hay nodos adicionales en este nivel
+
+    cantN = 0  # Contador local de nodos creados
+
+    for index,i in enumerate(raiz):
+        cantN += 1  # Incrementar la cantidad de nodos en este nivel
+        print("NODO EXPANDIDO")
+
+        if profA == 0:
+            print("Tablero:", i)
+            hijosN = hijos(i, raizOriginal, 4, profA, jugador)
+            print("HIJOS", hijosN)
+            
+            for hi in hijosN:
+                Arbol.hijos.append(hi)
+
+            # Sumar los nodos creados en niveles inferiores
+            can, m = recursivo(Arbol.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol)
+            cantN += can
+            print("PROF",profA,"NODO",i,"VALOR",m)
+            
+    
+            # Inicializamos las listas para los valores y los índices
+            valores = []
+            indices = []
+
+            for idx, k in enumerate(hijosN):  # Enumerar para obtener el índice y el valor
+                valores.append(k.valor)
+                indices.append(idx)  # Guardamos el índice del valor
+
+            print('VALORES:', valores)
+            print('INDICES:', indices)
+
+            # Ahora, calculamos el valor máximo o mínimo y guardamos el índice correspondiente
+            if jugador == '-inf':  # Maximización
+                max_val = max(valores)  # Tomar el valor máximo de los hijos
+                idx_max = indices[valores.index(max_val)]  # Encontrar el índice del valor máximo
+                Arbol.valor = max_val
+                Arbol.indiceH = idx_max  # Guardamos el índice del valor máximo
+            elif jugador == 'inf':  # Minimización
+                min_val = min(valores)  # Tomar el valor mínimo de los hijos
+                idx_min = indices[valores.index(min_val)]  # Encontrar el índice del valor mínimo
+                Arbol.valor = min_val
+                Arbol.indiceH = idx_min  # Guardamos el índice del valor mínimo
+
+            print('Valor seleccionado:', Arbol.valor)
+            print('Índice seleccionado:', Arbol.indiceH)
+
+
+        else:
+            print("Tablero:", i.tablero)
+            hijosN = hijos(i.tablero, raizOriginal, 4, profA, jugador)
+            print("HIJOS", hijosN)
+
+            
+            for hi in hijosN:
+                i.hijos.append(hi)
+            
+
+            # Sumar los nodos creados en niveles inferiores
+            can, m = recursivo(i.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol)
+            cantN += can
+            print("PROF",profA, profT, "NODO",i.tablero,"VALOR ALE",m)
+            
+            if(profA == profT): #ASIGNA A LAS HOJAS
+                if(i.valor == float('-inf')):
+                    if(m > float('-inf')):  #como es max, pregunta si mi nuevo valor es mayor que el avlor actual del nodo  
+                        i.valor = m
+                elif(i.valor == float('inf')):
+                    if(m < float('inf')):
+                        i.valor = m
+            else:
+                print("valor",i.valor)
+                listaV = []
+                
+                for k in hijosN: 
+                    listaV.append(k.valor)
+                
+                if i.valor == float('-inf'):  # Maximización
+                    i.valor = max(listaV)  # Tomar el valor máximo de los hijos
+                elif i.valor == float('inf'):  # Minimización
+                    i.valor = min(listaV)  # Tomar el valor mínimo de los hijos
+
+
+
+                print('LISTAV', listaV)
+                print("valor",i.valor)
+            
+
+
+            
+
+    return cantN, m
 
 def coordenadas_congeladas(tablero):
     # Definir las direcciones adyacentes (arriba, abajo, izquierda, derecha)
@@ -400,14 +518,14 @@ def coordenadas_congeladas(tablero):
 
     return congeladas_finales
 
-a = {'A8': 'r', 'B8': 'g', 'C8': 'g', 'D8': 'r', 'E8': 'd', 'F8': 'h', 'G8': 'd', 'H8': 'r',    
+a = {'A8': 'r', 'B8': 'g', 'C8': 0, 'D8': 0, 'E8': 0, 'F8': 0, 'G8': 0, 'H8': 0,    
     'A7': 0, 'B7': 0, 'C7': 0, 'D7': 0, 'E7': 0, 'F7': 0, 'G7': 0, 'H7': 0,
-    'A6': 0, 'B6': 0, 'C6': 'C', 'D6':0, 'E6': 0, 'F6': 0, 'G6': 0, 'H6': 0, 
+    'A6': 0, 'B6': 0, 'C6': 0, 'D6':0, 'E6': 0, 'F6': 0, 'G6': 0, 'H6': 0, 
     'A5': 0, 'B5': 0, 'C5': 0, 'D5': 0, 'E5': 0, 'F5': 0, 'G5': 0, 'H5': 0, 
     'A4': 0, 'B4': 0, 'C4': 0, 'D4': 0, 'E4': 0, 'F4': 0, 'G4': 0, 'H4': 0,
-    'A3': 0, 'B3': 0, 'C3': 0, 'D3': 0, 'E3': 'r', 'F3': 'H', 'G3': 0, 'H3': 0, 
+    'A3': 0, 'B3': 0, 'C3': 0, 'D3': 0, 'E3': 0, 'F3': 0, 'G3': 0, 'H3': 0, 
     'A2': 0, 'B2': 0, 'C2': 0, 'D2': 0, 'E2': 0, 'F2': 0, 'G2': 0, 'H2': 0, 
-    'A1': 'E', 'B1': 'R', 'C1': 'R', 'D1': 0, 'E1': 0, 'F1': 0, 'G1': 0, 'H1': 0, 
+    'A1': 'E', 'B1': 'R', 'C1': 0, 'D1': 0, 'E1': 0, 'F1': 0, 'G1': 0, 'H1': 0, 
     'A0': 0, 'A-1': 0, 'B0': 0, 'B-1': 0, 'C0': 0, 'C-1': 0, 'D0': 0, 'D-1': 0, 'E0': 0, 'F0': 0, 'E-1': 0, 'G0': 0, 'F-1': 0, 'H0': 0, 'G-1': 0, 'H-1': 0}
 congeladas = coordenadas_congeladas(a)
 print("Fichas congeladas:", congeladas)
@@ -432,14 +550,47 @@ def imprimir_arbol(nodo, nivel=0):
 # Suponiendo que tienes un nodo raíz 'raiz' y has añadido algunos hijos en su lista 'hijos'
 
 
+#respuesta = algoritmoMiniMax(a).hijos
+# respuesta = miniMaxR(a,4,3)
+
+
+
 #----------------------------------------------------------------------- HEURISTICAS -------------------------------------------------------------------------------------------
+#  SI NO ENCUENTRO SOLUCION: IA - HUMANO
+#SUMAR TODAS LAS HEURISTICAS
 
 #--CONTAR LA CANTIDAD DE CONEJOS si es R o r
 def contar_conejos(tablero):
     # Contar la cantidad de conejos (R o r) en el tablero
-    cantidad_conejos = sum(1 for v in tablero.values() if v in ['r'])   #in ['R'] o para el otro caso #in ['r']
-    print(f'Cantidad de conejos jugador ia r: {cantidad_conejos}')
-    return cantidad_conejos
+    cantidad_conejosIA = sum(1 for v in tablero.values() if v in ['r'])   #in ['R'] o para el otro caso #in ['r']
+    cantidad_conejosHUMANO = sum(1 for v in tablero.values() if v in ['R'])   #in ['R'] o para el otro caso #in ['r']
+    cantidadBunnies = cantidad_conejosIA - cantidad_conejosHUMANO  #
+    return cantidadBunnies
+
+#PRUEBA ------>  print("Cantidad HEURISTICA CONEJOS: ",contar_conejos(a))
+
+#--FICHAS EN LOS CUADROS AZULES
+def fichas_en_cuadros_azules(tablero):
+    # Definir las posiciones de los cuadros azules
+    cuadros_azules = ['C6', 'F6', 'C3', 'F3']
+    
+    # Crear un diccionario para almacenar las fichas en los cuadros azules
+    fichas_azules = {}
+    
+    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
+    for posicion in cuadros_azules:
+        fichas_azules[posicion] = tablero.get(posicion, 0)
+
+    #Si solo se quiere guardar las fichas que estan sin su posicion:
+    '''
+    fichas_azules = []
+    
+    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
+    for posicion in cuadros_azules:
+        fichas_azules.append(tablero.get(posicion, 0))
+    '''
+    
+    return fichas_azules
 
 #PRUEBA ------->   contar_conejos(a)
 
@@ -465,64 +616,20 @@ def conejo_mas_cercano_meta(tablero):
 
 #PRUEBA ------> print('El conejo de la ia mas cercano a la meta es:',conejo_mas_cercano_meta(a))
 
-#--CANTIDAD DE FICHAS DE CADA TIPO
-def cantidad_fichas_por_tipo(tablero):
-    # Inicializar diccionarios para contar las fichas de cada tipo
-    fichas_mayusculas = {}
-    fichas_minusculas = {}
-    
-    # Recorrer el tablero y contar las fichas según su tipo
-    for valor in tablero.values():
-        if isinstance(valor, str):
-            if valor.isupper():
-                if valor in fichas_mayusculas:
-                    fichas_mayusculas[valor] += 1
-                else:
-                    fichas_mayusculas[valor] = 1
-            elif valor.islower():
-                if valor in fichas_minusculas:
-                    fichas_minusculas[valor] += 1
-                else:
-                    fichas_minusculas[valor] = 1
-    
-    # Imprimir los resultados
-    print('Cantidad de fichas mayúsculas:')
-    for ficha, cantidad in fichas_mayusculas.items():
-        print(f'{ficha}: {cantidad}')
-    
-    print('Cantidad de fichas minúsculas:')
-    for ficha, cantidad in fichas_minusculas.items():
-        print(f'{ficha}: {cantidad}')
-    
-    return fichas_mayusculas, fichas_minusculas
+def iniciar(a,profundidad):
+    Arbol = Nodo(a,0,'-inf')
 
-#PRUEBA ------> cantidad_fichas_por_tipo(a)
+    respuesta,m = recursivo([a],a,profundidad, 0,'-inf',Arbol)
+    print("CANTIDAD NODOS",respuesta)
+    print('HEURISTICA GANADORA', Arbol.valor)
 
-#--FICHAS EN LOS CUADROS AZULES
-def fichas_en_cuadros_azules(tablero):
-    # Definir las posiciones de los cuadros azules
-    cuadros_azules = ['C6', 'F6', 'C3', 'F3']
-    
-    # Crear un diccionario para almacenar las fichas en los cuadros azules
-    fichas_azules = {}
-    
-    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
-    for posicion in cuadros_azules:
-        fichas_azules[posicion] = tablero.get(posicion, 0)
+    for indx, arb in enumerate(Arbol.hijos):
+        if(indx == Arbol.indiceH):
+            print(arb.tablero)
+            print(arb.cambio)
+            return(arb.cambio)
 
-    #Si solo se quiere guardar las fichas que estan sin su posicion:
-    '''
-    fichas_azules = []
-    
-    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
-    for posicion in cuadros_azules:
-        fichas_azules.append(tablero.get(posicion, 0))
-    '''
-    
-    return fichas_azules
-
-#PRUEBA -----> print('Fichas en los cuadros azules:', fichas_en_cuadros_azules(a))
-
-respuesta = algoritmoMiniMax(a).hijos
+# iniciar(a,2)
 # imprimir_arbol(respuesta)
+# print(validar_adyacentes_mismo_tipo(a,'C1'))
 
