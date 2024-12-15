@@ -225,6 +225,7 @@ class Game:
     
     def execute_ai_turn(self):
         """Calcula y ejecuta el movimiento de la IA utilizando Minimax."""
+        print(self.board_status)
         _, best_move = minimax(self.board_status, depth=3, maximizing_player=False)
         if best_move:
             old_pos, new_pos = best_move
