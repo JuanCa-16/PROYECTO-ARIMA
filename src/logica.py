@@ -120,6 +120,7 @@ def validaMov(congeladas,coordenada, ficha):
 
 def mover(coordenada, ficha, movimientos_validos, tablero, turno):
 
+    
     # blue_coordinates = ["C3", "F3", "C6", "F6"]
 
     movimientos_realizados = []  # Lista para almacenar los movimientos realizados
@@ -129,6 +130,8 @@ def mover(coordenada, ficha, movimientos_validos, tablero, turno):
     
     # Recorrer los movimientos válidos
     for mov in movimientos_validos:
+
+        
         # Determinar la nueva coordenada según la dirección del movimiento
         if mov == 0:  # Arriba
             nueva_letra = chr(ord(letra))
@@ -142,24 +145,28 @@ def mover(coordenada, ficha, movimientos_validos, tablero, turno):
         elif mov == 3:  # Izquierda
             nueva_letra = chr(ord(letra)-1)
             nueva_numero = numero
+        
+        
 
         nueva_coordenada = nueva_letra + str(nueva_numero)
-
-        print("NUEVA COORDENADA", nueva_coordenada)
         
+    
         # Verificar si la nueva coordenada está dentro del tablero
         if nueva_coordenada in tablero:
             casilla_destino = tablero[nueva_coordenada]
-            print("QUE HAY EN DESTICO", casilla_destino)
+            
+            
             # Comprobar si la casilla de destino es válida
             if casilla_destino == 0:  # Si la casilla está vacía (0)
                 # Agregar el movimiento a la lista de movimientos realizados
+                
                 totalM = []
+                
                 # print("COORDENADA MOV",coordenada, tablero)
                 totalM.append([coordenada, 0, None])
                 totalM.append([nueva_coordenada, ficha, mov])
                 totalM.append([turno-1])
-
+                
                 
                 # if(nueva_coordenada in blue_coordinates):
                 #     junta = validar_adyacentes_mismo_tipo(tablero, nueva_coordenada)
@@ -168,11 +175,13 @@ def mover(coordenada, ficha, movimientos_validos, tablero, turno):
                 #         totalM.append([nueva_coordenada,0,'ELIMINADA'])
 
                 movimientos_realizados.append(totalM)
+
+                # print(tablero)
             elif isinstance(casilla_destino, str):
                 # Verificar si la ficha en la nueva coordenada es del mismo tipo (mayúscula/minúscula)
                 if (ficha.islower() and casilla_destino.isupper()) or (ficha.isupper() and casilla_destino.islower()):
                     
-
+                    
                     if(turno>=2 and (quien_gana(ficha,casilla_destino))):
                         # Extraer la letra y número de la coordenadaNueva
                         letraN, numeroN = extraer_letra_o_numero(nueva_coordenada)
@@ -241,8 +250,11 @@ def actualizar_tablero(tablero, coordenada, valor):
         dict: El tablero actualizado.
     """
     if coordenada in tablero:  # Verificar si la coordenada existe en el tablero
+        
         tablero[coordenada] = valor
 
+    
+        
         blue_coordinates = ["C3", "F3", "C6", "F6"]
 
         if(coordenada in blue_coordinates):
@@ -253,12 +265,16 @@ def actualizar_tablero(tablero, coordenada, valor):
 
     else:
         print(f"Error: La coordenada '{coordenada}' no existe en el tablero.")
+
+
+    
     return tablero
 
 
 def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
 
     #Creo el nodo del arbol, que es el tablero que ingresa.
+    tableroOriginal = copy.deepcopy(board_status)
     raiz = Nodo(copy.deepcopy(board_status))
 
     #obtener fichas de min(enemigo)
@@ -273,14 +289,17 @@ def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
         valido = validaMov(congeladas,c,f)
         print(c,f,valido)
 
-        mov = mover(c,f,valido,copy.deepcopy(board_status),contadorTurno)
+        mov = mover(c,f,valido,tableroOriginal,contadorTurno)
         print("CAMBIOS:", mov)
+        print('------------')
+
+        tableroNuevo = copy.deepcopy(board_status)
 
         if(mov != []):
-            print("Mov no VACIO")
+            # print("Mov no VACIO")
             cont = 0
             for i in mov:
-                print("Cambios",i)
+                # print("Cambios",i)
                 cont2 = 0
                 for j in i:
                     #print("UN cambio", j)
@@ -294,7 +313,8 @@ def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
                         # print('ULTM', ultM)
                         turnosRes = mov[cont][-1]
                         #print('Tur', turnosRes)
-                        tableroNuevo = actualizar_tablero(board_status,coordenada,valor)
+                        tableroNuevo = actualizar_tablero(tableroNuevo,coordenada,valor)
+                        
 
                     cont2 = cont2 + 1
                 
@@ -309,7 +329,7 @@ def algoritmoMiniMax(board_status,contadorTurno=4, depth=1):
 
                 cont = cont + 1
 
-    # imprimir_arbol(raiz)
+    imprimir_arbol(raiz)
 
     return raiz
 
@@ -387,7 +407,7 @@ a = {'A8': 'r', 'B8': 'g', 'C8': 'g', 'D8': 'r', 'E8': 'd', 'F8': 'h', 'G8': 'd'
     'A4': 0, 'B4': 0, 'C4': 0, 'D4': 0, 'E4': 0, 'F4': 0, 'G4': 0, 'H4': 0,
     'A3': 0, 'B3': 0, 'C3': 0, 'D3': 0, 'E3': 0, 'F3': 0, 'G3': 0, 'H3': 0, 
     'A2': 0, 'B2': 0, 'C2': 0, 'D2': 0, 'E2': 0, 'F2': 0, 'G2': 0, 'H2': 0, 
-    'A1': 'R', 'B1': 'R', 'C1': 'R', 'D1': 'R', 'E1': 'R', 'F1': 'R', 'G1': 'E', 'H1': 'R', 
+    'A1': 'E', 'B1': 'R', 'C1': 'R', 'D1': 0, 'E1': 0, 'F1': 0, 'G1': 0, 'H1': 0, 
     'A0': 0, 'A-1': 0, 'B0': 0, 'B-1': 0, 'C0': 0, 'C-1': 0, 'D0': 0, 'D-1': 0, 'E0': 0, 'F0': 0, 'E-1': 0, 'G0': 0, 'F-1': 0, 'H0': 0, 'G-1': 0, 'H-1': 0}
 congeladas = coordenadas_congeladas(a)
 print("Fichas congeladas:", congeladas)
