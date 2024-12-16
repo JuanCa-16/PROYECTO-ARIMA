@@ -273,16 +273,16 @@ class Game:
                         # Incrementar el contador de movimientos
                         self.movimientos_realizados += 1
                         print("Cantidad de movimientos realizados: ",self.movimientos_realizados)
-                        # Verificar si se han realizado los movimientos permitidos
-                        if self.movimientos_realizados >= self.movimientos_permitidos:
-                            self.movimientos_realizados = 0  # Reiniciar el contador
-                            if(self.ganar('R')):
+                        if(self.ganar('R')):
                                 root = tk.Tk()
                                 root.withdraw()  # Ocultar la ventana principal de Tkinter
                                 messagebox.showinfo("GANADOR HUMANO", "DIGNO DE DEMOSTRAR EL PODER HUMANO")
                                 root.destroy()
                                 pygame.quit()
                                 sys.exit() 
+                        # Verificar si se han realizado los movimientos permitidos
+                        if self.movimientos_realizados >= self.movimientos_permitidos:
+                            self.movimientos_realizados = 0  # Reiniciar el contador
 
                             self.execute_ai_turn()  # Ejecutar el turno de la IA
                     
@@ -352,6 +352,13 @@ class Game:
             self.screen.fill((255, 255, 255))  # Fondo blanco
             self.draw()
             pygame.display.flip()  # Actualizar la pantalla
+            if(self.ganar('r')):
+                                root = tk.Tk()
+                                root.withdraw()  # Ocultar la ventana principal de Tkinter
+                                messagebox.showinfo("GANADOR IA", "LA IA ES EL FUTURO")
+                                root.destroy()
+                                pygame.quit()
+                                sys.exit() 
             # Preguntar al usuario cuántos movimientos desea hacer
         self.preguntar_movimientos()
 

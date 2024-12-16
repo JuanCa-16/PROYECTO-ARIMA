@@ -361,7 +361,7 @@ def hijos(board_status,raizOriginal,contadorTurno=4, depth=0, jugador='-inf'):
 
 def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
     if profA > profT:
-        m = random.randint(1,5)                                #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
+        m = totalHeuristica(raiz[0].tablero)                                 #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
         return  0, m  # No hay nodos adicionales en este nivel
 
     cantN = 0  # Contador local de nodos creados
@@ -559,6 +559,30 @@ def imprimir_arbol(nodo, nivel=0):
 #  SI NO ENCUENTRO SOLUCION: IA - HUMANO
 #SUMAR TODAS LAS HEURISTICAS
 
+def totalHeuristica(tablero):
+    # Calcular la heurística total sumando los resultados de las funciones heurísticas
+    heuristica_conejos = contar_conejos(tablero)
+    heuristica_cuadros_azules = fichas_en_cuadros_azules(tablero)
+    heuristica_conejo_meta = conejo_mas_cercano_meta(tablero)
+    heuristica_congeladas = contar_fichas_congeladas(tablero)
+    
+    total = heuristica_conejos + heuristica_cuadros_azules + heuristica_conejo_meta + heuristica_congeladas
+    return total
+
+#--CANTIDAD DE FICHAS CONGELADAS
+def contar_fichas_congeladas(tablero):
+    # Obtener las coordenadas de las fichas congeladas
+    congeladas = coordenadas_congeladas(tablero)
+    
+    # Contar la cantidad de fichas congeladas de la IA (minúsculas) y del humano (mayúsculas)
+    cantidad_congeladas_IA = sum(1 for coord in congeladas if tablero[coord].islower())
+    cantidad_congeladas_HUMANO = sum(1 for coord in congeladas if tablero[coord].isupper())
+    
+    # Calcular la diferencia para maximizar las ganancias de la IA
+    diferencia_congeladas = cantidad_congeladas_HUMANO - cantidad_congeladas_IA
+    
+    return diferencia_congeladas
+
 #--CONTAR LA CANTIDAD DE CONEJOS si es R o r
 def contar_conejos(tablero):
     # Contar la cantidad de conejos (R o r) en el tablero
@@ -574,47 +598,40 @@ def fichas_en_cuadros_azules(tablero):
     # Definir las posiciones de los cuadros azules
     cuadros_azules = ['C6', 'F6', 'C3', 'F3']
     
-    # Crear un diccionario para almacenar las fichas en los cuadros azules
-    fichas_azules = {}
+    # Contar las fichas de la IA y del humano en los cuadros azules
+    fichas_IA = sum(1 for pos in cuadros_azules if tablero.get(pos, 0) in ['r', 'g', 'd', 'h', 'c', 'e'])
+    fichas_HUMANO = sum(1 for pos in cuadros_azules if tablero.get(pos, 0) in ['R', 'G', 'D', 'H', 'C', 'E'])
     
-    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
-    for posicion in cuadros_azules:
-        fichas_azules[posicion] = tablero.get(posicion, 0)
-
-    #Si solo se quiere guardar las fichas que estan sin su posicion:
-    '''
-    fichas_azules = []
-    
-    # Recorrer las posiciones de los cuadros azules y obtener las fichas correspondientes
-    for posicion in cuadros_azules:
-        fichas_azules.append(tablero.get(posicion, 0))
-    '''
-    
-    return fichas_azules
+    return fichas_IA - fichas_HUMANO
 
 #PRUEBA ------->   contar_conejos(a)
 
 #--ENCUENTRA EL CONEJO MAS CERCANO A LA META
 def conejo_mas_cercano_meta(tablero):
-    # Inicializar variables para almacenar la posición del conejo más cercano y la menor distancia encontrada
-    posicion_mas_cercana = None
-    menor_distancia = float('inf')
+    # Inicializar variables para almacenar la menor distancia encontrada
+    menor_distancia_IA = float('inf')
+    menor_distancia_HUMANO = float('inf')
     
-    # Recorrer el tablero para encontrar conejos 'r'
+    # Recorrer el tablero para encontrar conejos 'r' y 'R'
     for posicion, valor in tablero.items():
         if valor == 'r':
             # Extraer la letra y el número de la posición
             letra, numero = extraer_letra_o_numero(posicion)
             # Calcular la distancia a la meta (fila 1)
             distancia = numero - 1
-            # Si la distancia es menor que la menor distancia encontrada, actualizar las variables
-            if distancia < menor_distancia:
-                menor_distancia = distancia
-                posicion_mas_cercana = posicion
+            # Si la distancia es menor que la menor distancia encontrada, actualizar la variable
+            if distancia < menor_distancia_IA:
+                menor_distancia_IA = distancia
+        elif valor == 'R':
+            # Extraer la letra y el número de la posición
+            letra, numero = extraer_letra_o_numero(posicion)
+            # Calcular la distancia a la meta (fila 8)
+            distancia = 8 - numero
+            # Si la distancia es menor que la menor distancia encontrada, actualizar la variable
+            if distancia < menor_distancia_HUMANO:
+                menor_distancia_HUMANO = distancia
     
-    return posicion_mas_cercana
-
-#PRUEBA ------> print('El conejo de la ia mas cercano a la meta es:',conejo_mas_cercano_meta(a))
+    return menor_distancia_HUMANO - menor_distancia_IA
 
 def iniciar(a,profundidad):
     Arbol = Nodo(a,0,'-inf')
