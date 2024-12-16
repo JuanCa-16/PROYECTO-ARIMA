@@ -627,7 +627,7 @@ def iniciar(a,profundidad):
         if(indx == Arbol.indiceH):
             print(arb.tablero)
             print(arb.cambio)
-            return(arb.cambio)
+            return(arb.tablero,arb.cambio)
 
 # iniciar(a,2)
 # imprimir_arbol(respuesta)

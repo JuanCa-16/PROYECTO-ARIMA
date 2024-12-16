@@ -4,7 +4,7 @@ import random
 import tkinter as tk
 from tkinter import simpledialog, messagebox
 from logica import iniciar, validar_adyacentes_mismo_tipo
-
+import sys  # Importa la librería para salir del programa
 
 class Game:
     def __init__(self, screen):
@@ -157,6 +157,32 @@ class Game:
             return piece_initials_gris[name]
         return 0  # Default si no se encuentra la pieza
 
+    def get_piece_name(self, initial):
+        """Devuelve el nombre de la pieza correspondiente a la inicial dorada o gris."""
+        piece_names_gold = {
+            "r": "conejo",
+            "h": "caballo",
+            "d": "perro",
+            "g": "gato",
+            "c": "camello",
+            "e": "elefante"
+        }
+        piece_names_gris = {
+            "R": "conejoGris",
+            "H": "caballoGris",
+            "D": "perroGris",
+            "G": "gatoGris",
+            "C": "camelloGris",
+            "E": "elefanteGris"
+        }
+        
+        # Buscar en los diccionarios si la inicial está presente
+        if initial in piece_names_gold:
+            return piece_names_gold[initial]
+        elif initial in piece_names_gris:
+            return piece_names_gris[initial]
+        return None  # Retorna None si no se encuentra la inicial
+
     def print_board_status(self):
         # Imprimir el estado del tablero
         for row in range(self.board_size):
@@ -182,6 +208,7 @@ class Game:
                         break
 
         elif event.type == pygame.MOUSEBUTTONUP:
+            
             if event.button == 1:
                 if self.selected_piece:
                     # Calcular la celda destino
@@ -233,13 +260,30 @@ class Game:
                             self.inicial = False
                             print("¡Todas las piezas grises están en el tablero! Turno de la IA.")
                             self.execute_ai_turn()  # Llamar al turno de la IA
+                            if(self.ganar('r')):
+                                root = tk.Tk()
+                                root.withdraw()  # Ocultar la ventana principal de Tkinter
+                                messagebox.showinfo("GANADOR IA", "LA IA ES EL FUTURO")
+                                root.destroy()
+                                pygame.quit()
+                                sys.exit() 
+
+
                     else:
-                         # Incrementar el contador de movimientos
+                        # Incrementar el contador de movimientos
                         self.movimientos_realizados += 1
                         print("Cantidad de movimientos realizados: ",self.movimientos_realizados)
                         # Verificar si se han realizado los movimientos permitidos
                         if self.movimientos_realizados >= self.movimientos_permitidos:
                             self.movimientos_realizados = 0  # Reiniciar el contador
+                            if(self.ganar('R')):
+                                root = tk.Tk()
+                                root.withdraw()  # Ocultar la ventana principal de Tkinter
+                                messagebox.showinfo("GANADOR HUMANO", "DIGNO DE DEMOSTRAR EL PODER HUMANO")
+                                root.destroy()
+                                pygame.quit()
+                                sys.exit() 
+
                             self.execute_ai_turn()  # Ejecutar el turno de la IA
                     
                         
@@ -264,14 +308,16 @@ class Game:
     def execute_ai_turn(self):
         """Calcula y ejecuta el movimiento de la IA utilizando Minimax."""
         print(self.board_status)
-        best_move = iniciar(self.board_status, 1)
+        tablero, best_move = iniciar(self.board_status, 1)
         
         print("JUAAAN",best_move, type(best_move))
         if best_move:
             old_pos = best_move[0]
             new_pos = best_move[1]
-            print(old_pos)
-            print(new_pos)
+
+            if(len(best_move) == 3):
+                guardar = self.board_status[new_pos]
+
             piece = self.board_status[old_pos]
             self.board_status[new_pos] = piece
             self.board_status[old_pos] = 0
@@ -283,6 +329,23 @@ class Game:
                     break
 
             print(f"IA movió {piece} de {old_pos} a {new_pos}.")
+
+            if(len(best_move)==3):
+                    
+                
+                new_new_pos = best_move[2]
+                
+                self.board_status[new_new_pos] = guardar
+                # Actualizar posición de la pieza en la lista `self.pieces`
+                nombre = self.get_piece_name(guardar)
+                print(nombre)
+                for p in self.pieces:
+                    if p["pos"] == self.get_screen_position_from_coordinate(new_pos) and p["name"] == nombre:
+                        p["pos"] = self.get_screen_position_from_coordinate(new_new_pos)
+                        break
+
+                print(f"IA EMPUJO {piece} de {new_pos} a {new_new_pos}.")
+
             self.print_board_status()
 
             # Redibujar el tablero y las piezas
@@ -376,5 +439,36 @@ class Game:
                                 break
                         
                         
+    def ganar(self, jugador):
+        """
+        Valida si un jugador ha ganado por alguna de las dos condiciones:
+        1. Si un conejo alcanza la fila 1 (para 'R') o la fila 8 (para 'r').
+        2. Si el jugador contrario se queda sin conejos.
+        """
+        conejos_rivales = 0
 
+        # Recorrer el tablero para verificar las condiciones
+        ganarR = {'A1', 'B1', 'C1', 'D1', 'E1', 'F1', 'G1', 'H1'}
+        ganarr = {'A8', 'B8', 'C8', 'D8', 'E8', 'F8', 'G8', 'H8'}
+
+        for llave,valor in self.board_status.items():
+        
+            # Verificar si algún conejo alcanzó la fila objetivo
+            if jugador == 'r' and valor == 'r' and (llave in ganarR):  # Minúscula llega a fila 8
+                return True
+            elif jugador == 'R' and valor == 'R' and (llave in ganarr):  # Mayúscula llega a fila 1
+                    return True
+
+            # Contar los conejos rivales
+            if jugador == 'r' and valor == 'R':  # Contar conejos mayúscula
+                conejos_rivales += 1
+            elif jugador == 'R' and valor == 'r':  # Contar conejos minúscula
+                conejos_rivales += 1
+
+        print('cantC', conejos_rivales)
+        # Verificar si el jugador rival se quedó sin conejos
+        if conejos_rivales == 0:
+            return True
+
+        return False
     #-----> AQUI VA GANAR -----------
