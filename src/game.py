@@ -63,6 +63,7 @@ class Game:
         self.movimientos_realizados = 0
         self.movimientos_permitidos = 1  # Valor por defecto
 
+    #CREA DICCIONARIO DE COORDENADAS(A8 = (COL,FILA))
     def create_board(self):
         # Genera un diccionario con las coordenadas del tablero
         board = {}
@@ -73,6 +74,7 @@ class Game:
                 board[coordinate] = (col, row)
         return board
 
+    #CREA DICCIONARIO DE 0 y letras
     def create_board_status(self):
         # Inicializa el estado del tablero con 0
         board_status = {}
@@ -80,6 +82,7 @@ class Game:
             board_status[key] = 0  # Representa celdas vacías
         return board_status
 
+    #PONER FICHAS IA EN TABLERO Y LAS DEL JUGADOR ABAJO DEL MAPA
     def initialize_pieces(self):
         """Colocar las piezas iniciales en posiciones predeterminadas"""
         piece_names = ["conejo"] * 8 + ["perro", "perro", "gato", "gato", "caballo", "caballo", "elefante", "camello"]
@@ -113,6 +116,7 @@ class Game:
             pos = (self.margin + i * self.cell_size, y_pos_gris)
             self.pieces.append({"name": name, "pos": pos})
 
+    #VENTANA DE CANT DE MOV JUGADOR
     def preguntar_movimientos(self):
         """Pregunta al usuario cuántos movimientos desea hacer usando una ventana emergente."""
         root = tk.Tk()
@@ -132,6 +136,7 @@ class Game:
             except ValueError:
                 print("Por favor, ingresa un número válido.")
 
+    #DADO EL NOMBRE DE LA IMAGEN ASIGNA SU FICHA EN LETRA
     def get_piece_initial(self, name):
         """Devuelve la inicial correspondiente para las fichas doradas y grises"""
         piece_initials_gold = {
@@ -157,6 +162,7 @@ class Game:
             return piece_initials_gris[name]
         return 0  # Default si no se encuentra la pieza
 
+    #DADA LA LETRA RETORNA EL NOMBRE DE LA IMAGEN   
     def get_piece_name(self, initial):
         """Devuelve el nombre de la pieza correspondiente a la inicial dorada o gris."""
         piece_names_gold = {
@@ -183,6 +189,7 @@ class Game:
             return piece_names_gris[initial]
         return None  # Retorna None si no se encuentra la inicial
 
+    #IMPRRIME EL TABLERO EN CONSOLA
     def print_board_status(self):
         # Imprimir el estado del tablero
         for row in range(self.board_size):
@@ -194,6 +201,7 @@ class Game:
 
         print()
 
+    #ACTUALIZA ALL (MOVIMINTOS USUARIO, ARRASTRAR Y SOLTAR, CAMBIOS DE TURNOS, GANAR Y PERDER)
     def update(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
@@ -293,6 +301,7 @@ class Game:
                 # Actualizar la posición de la pieza mientras se arrastra
                 self.selected_piece["pos"] = (event.pos[0] - self.mouse_offset[0], event.pos[1] - self.mouse_offset[1])
 
+    #SABER SI EL USUARIO YA UBICO SUS FICHAS
     def all_grey_pieces_placed(self):
         """Verifica si todas las piezas grises han sido colocadas en el tablero."""
         for piece in self.pieces:
@@ -305,6 +314,7 @@ class Game:
                     return False
         return True
     
+    #IA HACE SU MINIMAX Y EFECTUA EL MOVIMIENTO
     def execute_ai_turn(self):
         """Calcula y ejecuta el movimiento de la IA utilizando Minimax."""
         print(self.board_status)
@@ -362,6 +372,7 @@ class Game:
             # Preguntar al usuario cuántos movimientos desea hacer
         self.preguntar_movimientos()
 
+    #CONVIERTE UNA COORDENADA DE TIPO A8 A X,Y
     def get_screen_position_from_coordinate(self, coordinate):
         """Convierte una coordenada del tablero (A1, B2, etc.) a una posición de pantalla."""
         col = ord(coordinate[0]) - 65  # 'A' = 0, 'B' = 1, etc.
@@ -370,6 +381,7 @@ class Game:
         y = self.margin + row * self.cell_size
         return (x, y)
 
+    #DIBUJA ALL VISUAL
     def draw(self):
         """Dibujar el tablero y las piezas"""
         # Coordenadas específicas que deben ser azules
@@ -414,8 +426,7 @@ class Game:
                 y_offset = (self.cell_size - scaled_image.get_height()) // 2
                 self.screen.blit(scaled_image, (self.selected_piece["pos"][0] + x_offset, self.selected_piece["pos"][1] + y_offset))
 
-
-#La idea es mostrar un TKinter con un mensaje de ganador y la ficha que se elimina
+    #MENSAJE DE ELIMINAR FICHA Y LOGICA
     def eliminar_ficha(self):
 
             blue_coordinates = ["C3", "F3", "C6", "F6"]
@@ -445,7 +456,7 @@ class Game:
                                 print(f"Ficha eliminada en {coordinate}")
                                 break
                         
-                        
+    #BOOLEANO DE SI GANO UN JUGADOR DADO                
     def ganar(self, jugador):
         """
         Valida si un jugador ha ganado por alguna de las dos condiciones:
