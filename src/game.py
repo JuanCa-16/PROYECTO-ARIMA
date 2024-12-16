@@ -2,7 +2,7 @@ import pygame
 import os
 import random
 import tkinter as tk
-from tkinter import simpledialog
+from tkinter import simpledialog, messagebox
 from logica import iniciar, validar_adyacentes_mismo_tipo
 
 
@@ -354,6 +354,9 @@ class Game:
 
                 if(coordinate != '0'):
                     if not validar_adyacentes_mismo_tipo(self.board_status, coordinate):
+                        # Obtener la ficha eliminada
+                        ficha_eliminada = self.board_status[coordinate]
+
                         # Eliminar la ficha del tablero
                         self.board_status[coordinate] = 0
 
@@ -364,7 +367,14 @@ class Game:
                             y = self.margin + row * self.cell_size
                             if piece["pos"] == (x, y):
                                 self.pieces.remove(piece)
+                                # Mostrar mensaje con tkinter
+                                root = tk.Tk()
+                                root.withdraw()  # Ocultar la ventana principal de Tkinter
+                                messagebox.showinfo("Ficha Eliminada", f"Se eliminó la ficha {ficha_eliminada} en la coordenada {coordinate}")
+                                root.destroy()
                                 print(f"Ficha eliminada en {coordinate}")
                                 break
+                        
+                        
 
     #-----> AQUI VA GANAR -----------
