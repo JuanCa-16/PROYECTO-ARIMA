@@ -359,27 +359,28 @@ def hijos(board_status,raizOriginal,contadorTurno=4, depth=0, jugador='-inf'):
 
     return listaHijos
 
-def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
+def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol,nodoPadre):
     if profA > profT:
-        m = totalHeuristica(raiz[0].tablero)                                 #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
+        print("TABLERO HEURISTICA",nodoPadre)
+        # m = totalHeuristica(raiz[0].tablero)                                 #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
+        m = totalHeuristica(nodoPadre)                                 #TOTAL HEURISTICAAAAAAAAAAAAAAAAAAAA AQUI VA  <------
         return  0, m  # No hay nodos adicionales en este nivel
 
     cantN = 0  # Contador local de nodos creados
 
     for index,i in enumerate(raiz):
         cantN += 1  # Incrementar la cantidad de nodos en este nivel
-        print("NODO EXPANDIDO")
-
+        
         if profA == 0:
-            print("Tablero:", i)
+            print("RAIZ A EXPANDIR:", i)
             hijosN = hijos(i, raizOriginal, 4, profA, jugador)
-            print("HIJOS", hijosN)
+            print("HIJOS DE RAIZ:", len(hijosN))
             
             for hi in hijosN:
                 Arbol.hijos.append(hi)
 
             # Sumar los nodos creados en niveles inferiores
-            can, m = recursivo(Arbol.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol)
+            can, m = recursivo(Arbol.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol,i)
             cantN += can
             print("PROF",profA,"NODO",i,"VALOR",m)
             
@@ -392,7 +393,7 @@ def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
                 valores.append(k.valor)
                 indices.append(idx)  # Guardamos el índice del valor
 
-            print('VALORES:', valores)
+            print('VALORES HEURISTICAS:', valores)
             print('INDICES:', indices)
 
             # Ahora, calculamos el valor máximo o mínimo y guardamos el índice correspondiente
@@ -407,14 +408,14 @@ def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
                 Arbol.valor = min_val
                 Arbol.indiceH = idx_min  # Guardamos el índice del valor mínimo
 
-            print('Valor seleccionado:', Arbol.valor)
-            print('Índice seleccionado:', Arbol.indiceH)
+            print('HEURISTICA seleccionada:', Arbol.valor)
+            print('INDICE:', Arbol.indiceH)
 
 
         else:
-            print("Tablero:", i.tablero)
+            print("PROFUNDIDAD ACTUAL:",profA,"- NODO HIJO",index, i.tablero)
             hijosN = hijos(i.tablero, raizOriginal, 4, profA, jugador)
-            print("HIJOS", hijosN)
+            print("HIJOS:", len(hijosN))
 
             
             for hi in hijosN:
@@ -422,9 +423,9 @@ def recursivo(raiz, raizOriginal, profT, profA, jugador, Arbol):
             
 
             # Sumar los nodos creados en niveles inferiores
-            can, m = recursivo(i.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol)
+            can, m = recursivo(i.hijos, raizOriginal, profT, profA + 1, 'inf' if jugador == '-inf' else '-inf', Arbol,i.tablero)
             cantN += can
-            print("PROF",profA, profT, "NODO",i.tablero,"VALOR ALE",m)
+            print("VALOR HEURISTICA:",m)
             
             if(profA == profT): #ASIGNA A LAS HOJAS
                 if(i.valor == float('-inf')):
@@ -527,8 +528,8 @@ a = {'A8': 'r', 'B8': 'g', 'C8': 0, 'D8': 0, 'E8': 0, 'F8': 0, 'G8': 0, 'H8': 0,
     'A2': 0, 'B2': 0, 'C2': 0, 'D2': 0, 'E2': 0, 'F2': 0, 'G2': 0, 'H2': 0, 
     'A1': 'E', 'B1': 'R', 'C1': 0, 'D1': 0, 'E1': 0, 'F1': 0, 'G1': 0, 'H1': 0, 
     'A0': 0, 'A-1': 0, 'B0': 0, 'B-1': 0, 'C0': 0, 'C-1': 0, 'D0': 0, 'D-1': 0, 'E0': 0, 'F0': 0, 'E-1': 0, 'G0': 0, 'F-1': 0, 'H0': 0, 'G-1': 0, 'H-1': 0}
-congeladas = coordenadas_congeladas(a)
-print("Fichas congeladas:", congeladas)
+# congeladas = coordenadas_congeladas(a)
+# print("Fichas congeladas:", congeladas)
 
 def imprimir_arbol(nodo, nivel=0):
     """
@@ -636,7 +637,7 @@ def conejo_mas_cercano_meta(tablero):
 def iniciar(a,profundidad):
     Arbol = Nodo(a,0,'-inf')
 
-    respuesta,m = recursivo([a],a,profundidad, 0,'-inf',Arbol)
+    respuesta,m = recursivo([a],a,profundidad, 0,'-inf',Arbol,[])
     print("CANTIDAD NODOS",respuesta)
     print('HEURISTICA GANADORA', Arbol.valor)
 
@@ -646,7 +647,7 @@ def iniciar(a,profundidad):
             print(arb.cambio)
             return(arb.tablero,arb.cambio)
 
-# iniciar(a,2)
+hola = iniciar(a,1)
 # imprimir_arbol(respuesta)
 # print(validar_adyacentes_mismo_tipo(a,'C1'))
 
